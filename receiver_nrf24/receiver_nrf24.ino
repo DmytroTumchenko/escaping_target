@@ -18,9 +18,13 @@
 #include "nRF24L01.h"
 #include "RF24.h"
 #include "printf.h"
+#include <AccelStepper.h>
+
+// Define a stepper and the pins it will use
+AccelStepper stepper(1, 7, 8); // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
 
 // Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8
-RF24 radio(9, 10);
+RF24 radio(A0, 10);
 
 // Topology
 const uint64_t pipes[2] = { 0xABCDABCD71LL, 0x544d52687CLL };              // Radio pipe addresses for the 2 nodes to communicate.
@@ -36,9 +40,9 @@ role_e role = role_pong_back;                                              // Th
 byte counter = 1;
 
 // rgb - led pin configure
-#define led_1_Pin A0
+#define led_1_Pin A1
 #define led_2_Pin A2
-#define led_3_Pin A1
+#define led_3_Pin A3
 
 // Variables will change:
 int ledState = LOW;             // ledState used to set the LED
@@ -123,6 +127,7 @@ void blink_without_delay(int red, int green, int blue, int count)
 
 void loop(void) {
   // Pong back role.  Receive each packet, dump it out, and send it back
+  Serial.println(stepper.distanceToGo());
 
   if ( role == role_pong_back ) {
     byte pipeNo;
@@ -139,15 +144,24 @@ void loop(void) {
           break;
         case 4:
           blink_without_delay(0, 0, 255, 1);
-
+          stepper.setSpeed(360);
+          stepper.setMaxSpeed(360);
+          stepper.setAcceleration(360);
+          //stepper.moveTo(500);
           break;
         case 5:
           blink_without_delay(0, 0, 255, 2);
-
+          stepper.setSpeed(720);
+          stepper.setMaxSpeed(720);
+          stepper.setAcceleration(360);
+          //stepper.moveTo(500);
           break;
         case 6:
           blink_without_delay(0, 0, 255, 3);
-
+          stepper.setSpeed(1440);
+          stepper.setMaxSpeed(1440);
+          stepper.setAcceleration(360);
+          //stepper.moveTo(500);
           break;
         case 7:
           blink_without_delay(255, 0, 255, 1);
@@ -163,10 +177,12 @@ void loop(void) {
           break;
         case 0:
           blink_without_delay(255, 0, 0, 5);
+          stepper.stop();
           break;
 
           radio.writeAckPayload(pipeNo, &gotByte, 1 );
       }
     }
   }
+  stepper.runSpeed();
 }
