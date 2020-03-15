@@ -83,6 +83,9 @@ void setup() {
   analogWrite(led_1_Pin, 0);
   analogWrite(led_2_Pin, 0);
   analogWrite(led_3_Pin, 0);
+
+  stepper.setAcceleration(100);
+
 }
 
 void blink_without_delay(int red, int green, int blue, int count)
@@ -125,9 +128,11 @@ void blink_without_delay(int red, int green, int blue, int count)
   }
 }
 
+
+
 void loop(void) {
   // Pong back role.  Receive each packet, dump it out, and send it back
-  Serial.println(stepper.distanceToGo());
+  //Serial.println(stepper.distanceToGo());
 
   if ( role == role_pong_back ) {
     byte pipeNo;
@@ -137,31 +142,34 @@ void loop(void) {
       switch (gotByte) {
         case 1:
           blink_without_delay(255, 0, 0, 1);
+          //stepper.setSpeed(100);
+          stepper.move(-600);
+          Serial.println(stepper.maxSpeed());
           break;
         case 3:
           blink_without_delay(0, 255, 0, 1);
-
+          //stepper.setSpeed(100);
+          stepper.move(600);
+          Serial.println(stepper.maxSpeed());
           break;
         case 4:
           blink_without_delay(0, 0, 255, 1);
-          stepper.setSpeed(360);
-          stepper.setMaxSpeed(360);
-          stepper.setAcceleration(360);
-          //stepper.moveTo(500);
+
+          stepper.setMaxSpeed(20);
+          //stepper.move(500);
+
           break;
         case 5:
           blink_without_delay(0, 0, 255, 2);
-          stepper.setSpeed(720);
-          stepper.setMaxSpeed(720);
-          stepper.setAcceleration(360);
-          //stepper.moveTo(500);
+          stepper.setMaxSpeed(100);
+          //stepper.move(500);
+
           break;
         case 6:
           blink_without_delay(0, 0, 255, 3);
-          stepper.setSpeed(1440);
-          stepper.setMaxSpeed(1440);
-          stepper.setAcceleration(360);
-          //stepper.moveTo(500);
+          stepper.setMaxSpeed(300);
+          //stepper.move(500);
+
           break;
         case 7:
           blink_without_delay(255, 0, 255, 1);
@@ -173,7 +181,7 @@ void loop(void) {
           break;
         case 9:
           blink_without_delay(255, 0, 255, 3);
-
+          Serial.println(stepper.speed());
           break;
         case 0:
           blink_without_delay(255, 0, 0, 5);
@@ -181,8 +189,11 @@ void loop(void) {
           break;
 
           radio.writeAckPayload(pipeNo, &gotByte, 1 );
+
+
       }
     }
   }
-  stepper.runSpeed();
+
+  stepper.run();
 }
