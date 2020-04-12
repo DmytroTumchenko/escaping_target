@@ -51,10 +51,23 @@ unsigned long previousMillis = 0;        // will store last time LED was updated
 const long interval_ON = 200;           // interval at which to blink (milliseconds)
 const long interval_OFF = 100;           // interval at which to blink (milliseconds)
 
+const int left_barrier = 2;
+const int right_barrier = 3;
+
+long left_final_point = -10000;
+long right_final_point = 10000;
+
+// direction of moving target at this moment
+typedef enum { LEFT = 1, RIGHT, STOP } mode;
+mode current_move_state = STOP;
+
+// program on the current moment and difficult of this program: left_right - from utter left to utter right
+typedef enum { LEFT_RIGHT_EASY, LEFT_RIGHT_MEDIUM, LEFT_RIGHT_HARD } working_program;
+working_program program = LEFT_RIGHT_EASY;
 
 void setup() {
 
-  Serial.begin(115200);
+  Serial.begin(9600);
   printf_begin();
   Serial.print(F("\n\rRF24/examples/pingpair_ack/\n\rROLE: "));
   Serial.println(role_friendly_name[role]);
@@ -85,7 +98,36 @@ void setup() {
   analogWrite(led_3_Pin, 0);
 
   stepper.setAcceleration(100);
+  pinMode(left_barrier, INPUT_PULLUP);
+  pinMode(right_barrier, INPUT_PULLUP);
 
+  calibrate();
+}
+
+void calibrate()
+{
+  current_move_state = RIGHT;
+  Serial.println("Moving right to calibrate right_final_point...");
+  stepper.moveTo(right_final_point);
+  while ((stepper.distanceToGo() == 0) || (digitalRead(right_barrier) == HIGH))
+  {
+    stepper.run();
+    right_final_point = stepper.currentPosition();
+  }
+  Serial.println("right_final_point = ");
+  Serial.print(right_final_point);
+  current_move_state = LEFT;
+  //Serial.println(current_move_state);
+
+  Serial.println("Moving left to calibrate left_final_point...");
+  stepper.moveTo(left_final_point);
+  while ((stepper.distanceToGo() == 0) || (digitalRead(left_barrier) == HIGH))
+  {
+    stepper.run();
+    left_final_point = stepper.currentPosition();
+  }
+  Serial.println("left_final_point = ");
+  Serial.print(left_final_point);
 }
 
 void blink_without_delay(int red, int green, int blue, int count)
@@ -133,8 +175,10 @@ void blink_without_delay(int red, int green, int blue, int count)
 void loop(void) {
   // Pong back role.  Receive each packet, dump it out, and send it back
   //Serial.println(stepper.distanceToGo());
+  //Serial.println(working_program);
 
-  if ( role == role_pong_back ) {
+  if ( role == role_pong_back )
+  {
     byte pipeNo;
     byte gotByte;                                       // Dump the payloads until we've gotten everything
     while ( radio.available(&pipeNo)) {
@@ -142,33 +186,36 @@ void loop(void) {
       switch (gotByte) {
         case 1:
           blink_without_delay(255, 0, 0, 1);
-          //stepper.setSpeed(100);
+          stepper.setMaxSpeed(300);
+
           stepper.move(-600);
-          Serial.println(stepper.maxSpeed());
+          //Serial.println(stepper.maxSpeed());
           break;
         case 3:
           blink_without_delay(0, 255, 0, 1);
-          //stepper.setSpeed(100);
+          stepper.setMaxSpeed(300);
           stepper.move(600);
-          Serial.println(stepper.maxSpeed());
+          //Serial.println(stepper.maxSpeed());
           break;
         case 4:
           blink_without_delay(0, 0, 255, 1);
 
           stepper.setMaxSpeed(20);
-          //stepper.move(500);
+          program = LEFT_RIGHT_EASY;
+
 
           break;
         case 5:
           blink_without_delay(0, 0, 255, 2);
           stepper.setMaxSpeed(100);
           //stepper.move(500);
-
+          program = LEFT_RIGHT_MEDIUM;
           break;
         case 6:
           blink_without_delay(0, 0, 255, 3);
           stepper.setMaxSpeed(300);
           //stepper.move(500);
+          program = LEFT_RIGHT_HARD;
 
           break;
         case 7:
@@ -195,5 +242,5 @@ void loop(void) {
     }
   }
 
-  stepper.run();
+  //stepper.run();
 }
